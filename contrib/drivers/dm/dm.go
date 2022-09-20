@@ -165,7 +165,7 @@ func (d *DriverDM) TableFields(ctx context.Context, table string, schema ...stri
 					// Comment: m["Comment"].String(),
 				}
 			}
-			g.Dump("DriverDM.TableFields()::fields", fields)
+			// g.Dump("DriverDM.TableFields()::fields", fields)
 			return fields
 		},
 	)
@@ -199,3 +199,79 @@ func (d *DriverDM) DoFilter(ctx context.Context, link gdb.Link, sql string, args
 
 	return
 }
+
+func (d *DriverDM) DoInsert(
+	ctx context.Context, link gdb.Link, table string, list gdb.List, option gdb.DoInsertOption,
+) (result sql.Result, err error) {
+	switch option.InsertOption {
+	case gdb.InsertOptionSave:
+		g.Dump("===========================list===========================", list)
+		var (
+			keys   []string
+			keysT2 []string
+			// values []string
+		)
+		var (
+			listLength = len(list)
+		)
+		if listLength == 0 {
+			return nil, gerror.NewCode(gcode.CodeNotSupported, `Save operation list is empty by dm driver`)
+		}
+		var keysT1T2 []string
+		for k := range list[0] {
+			keys = append(keys, k)
+			keysT2 = append(keysT2, "T2."+k)
+			keysT1T2 = append(keysT1T2, fmt.Sprintf(`"T1."+%s+" = "+"T2."+%s"`, k, k))
+		}
+		var (
+			batchResult = new(gdb.SqlResult)
+			// charL, charR = d.GetChars()
+			// keyStr       = charL + strings.Join(keys, charL+","+charR) + charR
+			keyStr     = strings.Join(keys, ",")
+			keyStrT2   = strings.Join(keysT2, ",")
+			keyStrT1T2 = strings.Join(keysT1T2, ",")
+		)
+
+		sqlStr := fmt.Sprintf(`
+MERGE INTO %s T1
+USING
+(SELECT 5556 as ID,'555insertt' as ACCOUNT_NAME,'1' as PWD_RESET FROM DUAL
+UNION ALL
+SELECT 22,'2233INSERT',2 FROM DUAL
+UNION ALL
+SELECT 99,'99INSERT',3 FROM DUAL) T2
+ON (T1.ID = T2.ID)
+WHEN NOT MATCHED THEN INSERT(%s) VALUES
+(%s)
+WHEN MATCHED THEN UPDATE
+SET %s;
+COMMIT;
+`, table, keyStr, keyStrT2, keyStrT1T2)
+		r, err := d.DoExec(ctx, link, sqlStr)
+		if err != nil {
+			return r, err
+		}
+		if n, err := r.RowsAffected(); err != nil {
+			return r, err
+		} else {
+			batchResult.Result = r
+			batchResult.Affected += n
+		}
+		return batchResult, nil
+	}
+	return d.Core.DoInsert(ctx, link, table, list, option)
+}
+
+// MERGE INTO C_INSERT T1
+// USING
+// (SELECT '5556' as ID,'555insert2222t' as ACCOUNT_NAME,'1' as PWD_RESET FROM DUAL
+// UNION ALL
+// SELECT '8899','2233INSE222RT',2 FROM DUAL
+// UNION ALL
+// SELECT '889999','99INSER222T',3 FROM DUAL) T2
+// ON (T1.ID = T2.ID)
+// WHEN NOT MATCHED THEN INSERT(ID, ACCOUNT_NAME,PWD_RESET) VALUES
+// (T2.ID, T2.ACCOUNT_NAME, T2.PWD_RESET)
+// WHEN MATCHED THEN UPDATE
+// SET T1.ACCOUNT_NAME = T2.ACCOUNT_NAME ,T1.PWD_RESET = T2.PWD_RESET;
+// COMMIT;

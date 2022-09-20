@@ -135,18 +135,15 @@ NOT CLUSTER PRIMARY KEY("ID")) STORAGE(ON "MAIN", CLUSTERBTR) ;
 }
 
 type User struct {
-	ID          int64     `gorm:"column:id" db:"id" json:"id" form:"id"`
-	AccountName string    `gorm:"column:account_name" db:"account_name" json:"account_name" form:"account_name"`
-	PwdReset    int64     `gorm:"column:pwd_reset" db:"pwd_reset" json:"pwd_reset" form:"pwd_reset"`
-	Phone       string    `gorm:"column:phone" db:"phone" json:"phone" form:"phone"`
-	Description string    `gorm:"column:description" db:"description" json:"description" form:"description"`
-	Photo       string    `gorm:"column:photo" db:"photo" json:"photo" form:"photo"`
-	Enabled     int64     `gorm:"column:enabled" db:"enabled" json:"enabled" form:"enabled"`
-	Deleted     int64     `gorm:"column:deleted" db:"deleted" json:"deleted" form:"deleted"`
-	CreatedBy   string    `gorm:"column:created_by" db:"created_by" json:"created_by" form:"created_by"`
-	CreatedTime time.Time `gorm:"column:created_time" db:"created_time" json:"created_time" form:"created_time"`
-	UpdatedBy   string    `gorm:"column:updated_by" db:"updated_by" json:"updated_by" form:"updated_by"`
-	UpdatedTime time.Time `gorm:"column:updated_time" db:"updated_time" json:"updated_time" form:"updated_time"`
+	ID          int64     `orm:"id"`
+	AccountName string    `orm:"account_name"`
+	PwdReset    int64     `orm:"pwd_reset"`
+	Enabled     int64     `orm:"enabled"`
+	Deleted     int64     `orm:"deleted"`
+	CreatedBy   string    `orm:"created_by"`
+	CreatedTime time.Time `orm:"created_time"`
+	UpdatedBy   string    `orm:"updated_by"`
+	UpdatedTime time.Time `orm:"updated_time"`
 }
 
 func createInitTable(table ...string) (name string) {

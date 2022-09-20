@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	// "github.com/gogf/gf/v2/frame/g"
 	// "github.com/gogf/gf/v2/os/gtime"
@@ -118,12 +119,12 @@ func TestTableFields(t *testing.T) {
 
 func Test_DB_Query(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		tableName := "t_inf_user"
-		createTable(tableName)
+		tableName := "c_insert"
+		// createTable(tableName)
 
 		resOne, err := db.Query(ctx, fmt.Sprintf("SELECT * from %s", tableName))
 		t.AssertNil(err)
-		g.Dump(resOne)
+		g.Dump("resOne", resOne)
 
 		resTwo := make([]User, 0)
 		err = db.Schema(TestDbName).Model(tableName).Scan(&resTwo)
@@ -133,11 +134,11 @@ func Test_DB_Query(t *testing.T) {
 		model := db.Model(tableName)
 		// model.Where("id", g.Slice{401877392097280})
 		// model.Where("account_name like ?", "%"+"xzh"+"%")
-		model.Where("deleted", 1).Order("created_time desc")
+		model.Where("deleted", 0).Order("created_time desc")
 
 		total, err := model.Count()
 		t.AssertNil(err)
-		g.Dump(total)
+		g.Dump("total", total)
 
 		err = model.Scan(&resThree)
 		// err = model.Page(pageNo, pageSize).Scan(&result)
@@ -145,10 +146,39 @@ func Test_DB_Query(t *testing.T) {
 	})
 }
 
+func TestSave(t *testing.T) {
+	gtest.C(t, func(t *gtest.T) {
+		// createTable("DoInsert")
+		// defer dropTable("DoInsert")
+		data := []User{
+			{
+				ID:          5556,
+				AccountName: "user_3",
+				CreatedTime: time.Now(),
+			},
+			{
+				ID:          22,
+				AccountName: "user_3",
+				CreatedTime: time.Now(),
+			},
+			{
+				ID:          223,
+				AccountName: "user_3",
+				CreatedTime: time.Now(),
+			},
+		}
+		_, err := db.Schema(TestDbName).Model("C_insert").Data(data).Save()
+		gtest.Assert(err, nil)
+
+		// _, err = db.Schema(TestDbName).Replace(ctx, "DoInsert", data, 10)
+		// gtest.Assert(err, nil)
+	})
+}
+
 func TestDoInsert(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		// createTable("C_insert")
-		// defer dropTable("T_INF_insert")
+		// defer dropTable("C_insert")
 		i := 66
 		data := User{
 			ID:          int64(i),
@@ -174,23 +204,6 @@ func TestDoInsert(t *testing.T) {
 		gtest.Assert(err, nil)
 	})
 
-	// gtest.C(t, func(t *gtest.T) {
-	// 	// createTable("DoInsert")
-	// 	// defer dropTable("DoInsert")
-
-	// 	i := 22
-	// 	data := g.Map{
-	// 		"ID":           i,
-	// 		"ACCOUNT_NAME": fmt.Sprintf(`t%d`, i),
-	// 		"PWD_RESET":    2,
-	// 		"CREATED_TIME": gtime.Now().String(),
-	// 	}
-	// 	_, err := db.Schema(TestDbName).Save(ctx, "C_insert", data, 10)
-	// 	gtest.Assert(err, nil)
-
-	// 	// _, err = db.Schema(TestDbName).Replace(ctx, "DoInsert", data, 10)
-	// 	// gtest.Assert(err, nil)
-	// })
 }
 
 // func Test_DB_Exec(t *testing.T) {
@@ -225,34 +238,28 @@ func Test_DB_Insert(t *testing.T) {
 		t.Assert(n, 1)
 
 		// struct
-		type User struct {
-			ID           int    `gconv:"ID"`
-			ACCOUNT_NAME string `json:"ACCOUNT_NAME"`
-			CREATED_TIME string `json:"CREATED_TIME"`
-		}
-		timeStr := gtime.Now().String()
+		timeStr := time.Now()
 		result, err = db.Schema(TestDbName).Insert(ctx, "c_insert", User{
-			ID:           33,
-			ACCOUNT_NAME: "user_3",
-			CREATED_TIME: timeStr,
+			ID:          3,
+			AccountName: "user_3",
+			CreatedTime: timeStr,
 		})
 		t.AssertNil(err)
 		n, _ = result.RowsAffected()
 		t.Assert(n, 1)
 
-		one, err := db.Schema(TestDbName).Model("c_insert").Where("ID", 33).One()
+		one, err := db.Schema(TestDbName).Model("c_insert").Where("ID", 3).One()
 		t.AssertNil(err)
-		fmt.Println(one)
-		t.Assert(one["ID"].Int(), 33)
+		t.Assert(one["ID"].Int(), 3)
 		t.Assert(one["ACCOUNT_NAME"].String(), "user_3")
 		t.Assert(one["CREATED_TIME"].GTime().String(), timeStr)
 
 		// *struct
-		timeStr = gtime.Now().String()
+		timeStr = time.Now()
 		result, err = db.Schema(TestDbName).Insert(ctx, "c_insert", &User{
-			ID:           4,
-			ACCOUNT_NAME: "t4",
-			CREATED_TIME: timeStr,
+			ID:          4,
+			AccountName: "t4",
+			CreatedTime: timeStr,
 		})
 		t.AssertNil(err)
 		n, _ = result.RowsAffected()
@@ -265,7 +272,7 @@ func Test_DB_Insert(t *testing.T) {
 		t.Assert(one["CREATED_TIME"].GTime().String(), timeStr)
 
 		// batch with Insert
-		timeStr = gtime.Now().String()
+		timeStr = time.Now()
 		r, err := db.Schema(TestDbName).Insert(ctx, "c_insert", g.Slice{
 			g.Map{
 				"ID":           200,
@@ -290,117 +297,99 @@ func Test_DB_Insert(t *testing.T) {
 	})
 }
 
-// func Test_DB_BatchInsert(t *testing.T) {
-// 	gtest.C(t, func(t *gtest.T) {
-// 		table := createTable()
-// 		defer dropTable(table)
-// 		r, err := db.Insert(ctx, table, g.List{
-// 			{
-// 				"ID":          2,
-// 				"PASSPORT":    "t2",
-// 				"PASSWORD":    "25d55ad283aa400af464c76d713c07ad",
-// 				"NICKNAME":    "name_2",
-// 				"CREATE_TIME": gtime.Now().String(),
-// 			},
-// 			{
-// 				"ID":          3,
-// 				"PASSPORT":    "user_3",
-// 				"PASSWORD":    "25d55ad283aa400af464c76d713c07ad",
-// 				"NICKNAME":    "name_3",
-// 				"CREATE_TIME": gtime.Now().String(),
-// 			},
-// 		}, 1)
-// 		t.AssertNil(err)
-// 		n, _ := r.RowsAffected()
-// 		t.Assert(n, 2)
-
-// 	})
-
-// 	gtest.C(t, func(t *gtest.T) {
-// 		table := createTable()
-// 		defer dropTable(table)
-// 		// []interface{}
-// 		r, err := db.Insert(ctx, table, g.Slice{
-// 			g.Map{
-// 				"ID":          2,
-// 				"PASSPORT":    "t2",
-// 				"PASSWORD":    "25d55ad283aa400af464c76d713c07ad",
-// 				"NICKNAME":    "name_2",
-// 				"CREATE_TIME": gtime.Now().String(),
-// 			},
-// 			g.Map{
-// 				"ID":          3,
-// 				"PASSPORT":    "user_3",
-// 				"PASSWORD":    "25d55ad283aa400af464c76d713c07ad",
-// 				"NICKNAME":    "name_3",
-// 				"CREATE_TIME": gtime.Now().String(),
-// 			},
-// 		}, 1)
-// 		t.AssertNil(err)
-// 		n, _ := r.RowsAffected()
-// 		t.Assert(n, 2)
-// 	})
-
-// 	// batch insert map
-// 	gtest.C(t, func(t *gtest.T) {
-// 		table := createTable()
-// 		defer dropTable(table)
-// 		result, err := db.Insert(ctx, table, g.Map{
-// 			"ID":          1,
-// 			"PASSPORT":    "t1",
-// 			"PASSWORD":    "p1",
-// 			"NICKNAME":    "T1",
-// 			"CREATE_TIME": gtime.Now().String(),
-// 		})
-// 		t.AssertNil(err)
-// 		n, _ := result.RowsAffected()
-// 		t.Assert(n, 1)
-// 	})
-// }
-
-// func Test_DB_BatchInsert_Struct(t *testing.T) {
-// 	// batch insert struct
-// 	gtest.C(t, func(t *gtest.T) {
-// 		table := createTable()
-// 		defer dropTable(table)
-
-// 		type User struct {
-// 			Id         int         `c:"ID"`
-// 			Passport   string      `c:"PASSPORT"`
-// 			Password   string      `c:"PASSWORD"`
-// 			NickName   string      `c:"NICKNAME"`
-// 			CreateTime *gtime.Time `c:"CREATE_TIME"`
-// 		}
-// 		user := &User{
-// 			Id:         1,
-// 			Passport:   "t1",
-// 			Password:   "p1",
-// 			NickName:   "T1",
-// 			CreateTime: gtime.Now(),
-// 		}
-// 		result, err := db.Insert(ctx, table, user)
-// 		t.AssertNil(err)
-// 		n, _ := result.RowsAffected()
-// 		t.Assert(n, 1)
-// 	})
-// }
-
-func Test_DB_Update(t *testing.T) {
-	table := createInitTable()
-	defer dropTable(table)
+func Test_DB_BatchInsert(t *testing.T) {
+	gtest.C(t, func(t *gtest.T) {
+		table := "c_insert"
+		// table := createTable()
+		// defer dropTable(table)
+		r, err := db.Schema(TestDbName).Insert(ctx, table, g.List{
+			{
+				"ID":           22,
+				"ACCOUNT_NAME": "t2",
+				"CREATE_TIME":  gtime.Now().String(),
+			},
+			{
+				"ID":           23,
+				"ACCOUNT_NAME": "user_3",
+				"CREATE_TIME":  gtime.Now().String(),
+			},
+		}, 1)
+		t.AssertNil(err)
+		n, _ := r.RowsAffected()
+		t.Assert(n, 2)
+	})
 
 	gtest.C(t, func(t *gtest.T) {
-		result, err := db.Update(ctx, table, "password='987654321'", "id=3")
+		table := "c_insert"
+		// table := createTable()
+		// defer dropTable(table)
+		// []interface{}
+		r, err := db.Schema(TestDbName).Insert(ctx, table, g.Slice{
+			g.Map{
+				"ID":           32,
+				"ACCOUNT_NAME": "32t2",
+				"CREATE_TIME":  gtime.Now().String(),
+			},
+			g.Map{
+				"ID":           33,
+				"ACCOUNT_NAME": "33user_3",
+				"CREATE_TIME":  gtime.Now().String(),
+			},
+		}, 1)
+		t.AssertNil(err)
+		n, _ := r.RowsAffected()
+		t.Assert(n, 2)
+	})
+
+	// batch insert map
+	gtest.C(t, func(t *gtest.T) {
+		table := "c_insert"
+		// table := createTable()
+		// defer dropTable(table)
+		result, err := db.Schema(TestDbName).Insert(ctx, table, g.Map{
+			"ID":           41,
+			"ACCOUNT_NAME": "41user41",
+			"CREATE_TIME":  gtime.Now().String(),
+		})
+		t.AssertNil(err)
+		n, _ := result.RowsAffected()
+		t.Assert(n, 1)
+	})
+}
+
+func Test_DB_BatchInsert_Struct(t *testing.T) {
+	// batch insert struct
+	gtest.C(t, func(t *gtest.T) {
+		table := "c_insert"
+		// table := createTable()
+		// defer dropTable(table)
+		user := &User{
+			ID:          5556,
+			AccountName: "t1",
+			// CreatedTime: time.Now(),
+		}
+		result, err := db.Schema(TestDbName).Model(table).OmitEmpty().Insert(user)
+		t.AssertNil(err)
+		n, _ := result.RowsAffected()
+		t.Assert(n, 1)
+	})
+}
+
+func Test_DB_Update(t *testing.T) {
+	table := "c_insert"
+	// table := createInitTable()
+	// defer dropTable(table)
+
+	gtest.C(t, func(t *gtest.T) {
+		result, err := db.Update(ctx, table, "pwd_reset=6", "id=66")
 		t.AssertNil(err)
 		n, _ := result.RowsAffected()
 		t.Assert(n, 1)
 
-		one, err := db.Model(table).Where("ID", 3).One()
+		one, err := db.Model(table).Where("ID", 66).One()
 		t.AssertNil(err)
-		t.Assert(one["ID"].Int(), 3)
-		t.Assert(one["PASSPORT"].String(), "user_3")
-		t.Assert(strings.TrimSpace(one["PASSWORD"].String()), "987654321")
-		t.Assert(one["NICKNAME"].String(), "name_3")
+		t.Assert(one["ID"].Int(), 66)
+		t.Assert(one["ACCOUNT_NAME"].String(), "A66222s")
 	})
 }
 
@@ -650,23 +639,24 @@ func Test_DB_Delete(t *testing.T) {
 		result, err := db.Delete(ctx, "c_insert", "1=1")
 		t.AssertNil(err)
 		n, _ := result.RowsAffected()
-		t.Assert(n, 8)
+		t.Assert(n, 1)
 	})
 
 	gtest.C(t, func(t *gtest.T) {
-		result, err := db.Model("c_insert").Delete()
+		result, err := db.Model("c_insert").Where("id", 23).Delete()
 		t.AssertNil(err)
 		n, _ := result.RowsAffected()
-		t.Assert(n, 8)
+		t.Assert(n, 1)
 	})
 }
 
-// func Test_Empty_Slice_Argument(t *testing.T) {
-// 	table := createInitTable()
-// 	defer dropTable(table)
-// 	gtest.C(t, func(t *gtest.T) {
-// 		result, err := db.GetAll(ctx, fmt.Sprintf(`select * from %s where id in(?)`, table), g.Slice{})
-// 		t.AssertNil(err)
-// 		t.Assert(len(result), 0)
-// 	})
-// }
+func Test_Empty_Slice_Argument(t *testing.T) {
+	table := "c_insert"
+	// table := createInitTable()
+	// defer dropTable(table)
+	gtest.C(t, func(t *gtest.T) {
+		result, err := db.GetAll(ctx, fmt.Sprintf(`select * from %s where id in(?)`, table), g.Slice{})
+		t.AssertNil(err)
+		t.Assert(len(result), 0)
+	})
+}
