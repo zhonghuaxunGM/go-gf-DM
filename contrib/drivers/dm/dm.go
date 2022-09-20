@@ -186,15 +186,16 @@ func (d *DriverDM) DoFilter(ctx context.Context, link gdb.Link, sql string, args
 	// index++
 	// return fmt.Sprintf("@p%d", index)
 	// })
-	g.Dump("sql:", sql)
+	// g.Dump("sql:", sql)
 	str, _ := gregex.ReplaceString("\"", "", sql)
 	str, _ = gregex.ReplaceString("\n", "", str)
 	str, _ = gregex.ReplaceString("\t", "", str)
-	g.Dump("str:", str)
+	// g.Dump("str:", str)
 
 	newSql = strings.ToUpper(str)
 	g.Dump("DriverDM.DoFilter()::newSql", newSql)
 	newArgs = args
-	// g.Dump("args:", newArgs)
+	g.Dump("DriverDM.DoFilter()::newArgs", newArgs)
+
 	return
 }
