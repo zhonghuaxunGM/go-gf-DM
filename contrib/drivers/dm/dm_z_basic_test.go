@@ -152,18 +152,23 @@ func TestSave(t *testing.T) {
 		// defer dropTable("DoInsert")
 		data := []User{
 			{
-				ID:          5556,
-				AccountName: "user_3",
+				ID:          1,
+				AccountName: "dp11",
 				CreatedTime: time.Now(),
 			},
 			{
-				ID:          22,
-				AccountName: "user_3",
+				ID:          2,
+				AccountName: "dp22",
 				CreatedTime: time.Now(),
 			},
 			{
-				ID:          223,
-				AccountName: "user_3",
+				ID:          3,
+				AccountName: "dp33",
+				CreatedTime: time.Now(),
+			},
+			{
+				ID:          5,
+				AccountName: "dp55",
 				CreatedTime: time.Now(),
 			},
 		}

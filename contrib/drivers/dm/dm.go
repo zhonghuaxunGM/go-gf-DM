@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 
 	_ "gitee.com/chunanyong/dm"
@@ -204,49 +206,87 @@ func (d *DriverDM) DoInsert(
 	ctx context.Context, link gdb.Link, table string, list gdb.List, option gdb.DoInsertOption,
 ) (result sql.Result, err error) {
 	switch option.InsertOption {
+	// Save option only on duplicate key : ID
 	case gdb.InsertOptionSave:
 		g.Dump("===========================list===========================", list)
-		var (
-			keys   []string
-			keysT2 []string
-			// values []string
-		)
-		var (
-			listLength = len(list)
-		)
+		listLength := len(list)
 		if listLength == 0 {
 			return nil, gerror.NewCode(gcode.CodeNotSupported, `Save operation list is empty by dm driver`)
 		}
-		var keysT1T2 []string
-		for k := range list[0] {
-			keys = append(keys, k)
-			keysT2 = append(keysT2, "T2."+k)
-			keysT1T2 = append(keysT1T2, fmt.Sprintf(`"T1."+%s+" = "+"T2."+%s"`, k, k))
-		}
 		var (
-			batchResult = new(gdb.SqlResult)
-			// charL, charR = d.GetChars()
-			// keyStr       = charL + strings.Join(keys, charL+","+charR) + charR
-			keyStr     = strings.Join(keys, ",")
-			keyStrT2   = strings.Join(keysT2, ",")
-			keyStrT1T2 = strings.Join(keysT1T2, ",")
+			keys           []string
+			keysWithTable  []string
+			keysWithAssign []string
+			selvalues      []string
+			values         []string
 		)
+		charL, charR := d.GetChars()
+		valuecharL, valuecharR := "'", "'"
+		for k := range list[0] {
+			keys = append(keys, charL+k+charR)
+			keysWithTable = append(keysWithTable, "T2."+charL+k+charR)
+			keysWithAssign = append(keysWithAssign, fmt.Sprintf(`T1.%s = T2.%s`, charL+k+charR, charL+k+charR))
+		}
+		for _, column := range keys {
+			fmt.Println("===========================")
+			fmt.Println(list[0])
+			g.Dump(list[0])
+			m := list[0]
+			fmt.Println("column:", column)
+			fmt.Println("list[0][column]:", m[column])
+			if m[column] == nil {
+				fmt.Println("list[0][column]:", list[0][column])
+				continue
+			}
+			va := reflect.ValueOf(list[0][column])
+			ty := reflect.TypeOf(list[0][column])
+			d := ""
+			switch ty.Kind() {
+			case reflect.String:
+				d = va.String()
+			case reflect.Int:
+				d = strconv.FormatInt(va.Int(), 10)
+			case reflect.Int64:
+				d = strconv.FormatInt(va.Int(), 10)
+			default:
+				fmt.Println("default")
+			}
+			selvalues = append(selvalues, fmt.Sprintf(valuecharL+"%s"+valuecharR+" AS "+charL+"%s"+charR, d, column))
+		}
+		fmt.Println(selvalues)
+		for _, mapper := range list[1:] {
+			var element []string
+			for _, column := range keys {
+				if mapper[column] == nil {
+					continue
+				}
+				va := reflect.ValueOf(mapper[column])
+				ty := reflect.TypeOf(mapper[column])
+				switch ty.Kind() {
+				case reflect.String:
+					element = append(element, valuecharL+va.String()+valuecharR)
+				case reflect.Int:
+					element = append(element, strconv.FormatInt(va.Int(), 10))
+				case reflect.Int64:
+					element = append(element, strconv.FormatInt(va.Int(), 10))
+				}
+			}
+			values = append(values, fmt.Sprintf(`UNION ALL SELECT %s FROM DUAL`, strings.Join(element, ",")))
+		}
 
+		var (
+			batchResult      = new(gdb.SqlResult)
+			selectValues     = strings.Join(selvalues, ",")
+			sqlValues        = strings.Join(values, " ")
+			keyStr           = strings.Join(keys, ",")
+			keyStrWithTable  = strings.Join(keysWithTable, ",")
+			keyStrWithAssign = strings.Join(keysWithAssign, ",")
+		)
 		sqlStr := fmt.Sprintf(`
-MERGE INTO %s T1
-USING
-(SELECT 5556 as ID,'555insertt' as ACCOUNT_NAME,'1' as PWD_RESET FROM DUAL
-UNION ALL
-SELECT 22,'2233INSERT',2 FROM DUAL
-UNION ALL
-SELECT 99,'99INSERT',3 FROM DUAL) T2
-ON (T1.ID = T2.ID)
-WHEN NOT MATCHED THEN INSERT(%s) VALUES
-(%s)
-WHEN MATCHED THEN UPDATE
-SET %s;
+MERGE INTO %s T1 USING (SELECT %s FROM DUAL %s) T2 ON (T1.ID = T2.ID) WHEN NOT MATCHED THEN INSERT(%s) VALUES (%s) WHEN MATCHED THEN UPDATE SET %s; 
 COMMIT;
-`, table, keyStr, keyStrT2, keyStrT1T2)
+`, table, selectValues, sqlValues, keyStr, keyStrWithTable, keyStrWithAssign)
+		g.Dump("===========================sqlStr===========================", sqlStr)
 		r, err := d.DoExec(ctx, link, sqlStr)
 		if err != nil {
 			return r, err
@@ -261,17 +301,3 @@ COMMIT;
 	}
 	return d.Core.DoInsert(ctx, link, table, list, option)
 }
-
-// MERGE INTO C_INSERT T1
-// USING
-// (SELECT '5556' as ID,'555insert2222t' as ACCOUNT_NAME,'1' as PWD_RESET FROM DUAL
-// UNION ALL
-// SELECT '8899','2233INSE222RT',2 FROM DUAL
-// UNION ALL
-// SELECT '889999','99INSER222T',3 FROM DUAL) T2
-// ON (T1.ID = T2.ID)
-// WHEN NOT MATCHED THEN INSERT(ID, ACCOUNT_NAME,PWD_RESET) VALUES
-// (T2.ID, T2.ACCOUNT_NAME, T2.PWD_RESET)
-// WHEN MATCHED THEN UPDATE
-// SET T1.ACCOUNT_NAME = T2.ACCOUNT_NAME ,T1.PWD_RESET = T2.PWD_RESET;
-// COMMIT;
