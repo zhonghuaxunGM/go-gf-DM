@@ -146,7 +146,6 @@ func (d *DriverDM) TableFields(ctx context.Context, table string, schema ...stri
 			}
 			fields = make(map[string]*gdb.TableField)
 			for _, m := range result {
-				g.Dump(m)
 				// m[NULLABLE] returns "N" "Y"
 				// "N" means not null
 				// "Y" means could be null
@@ -184,9 +183,9 @@ func (d *DriverDM) DoFilter(ctx context.Context, link gdb.Link, sql string, args
 	str, _ = gregex.ReplaceString("\t", "", str)
 	// There should be no need to capitalize, because it has been done from field processing before
 	newSql = str
-	g.Dump("DriverDM.DoFilter()::newSql", newSql)
+	// g.Dump("DriverDM.DoFilter()::newSql", newSql)
 	newArgs = args
-	g.Dump("DriverDM.DoFilter()::newArgs", newArgs)
+	// g.Dump("DriverDM.DoFilter()::newArgs", newArgs)
 
 	return
 }
@@ -195,11 +194,15 @@ func (d *DriverDM) DoInsert(
 	ctx context.Context, link gdb.Link, table string, list gdb.List, option gdb.DoInsertOption,
 ) (result sql.Result, err error) {
 	switch option.InsertOption {
+	case gdb.InsertOptionReplace:
+		// TODO
+		// TO BE Supported
+		return nil, gerror.NewCode(gcode.CodeNotSupported, `Replace operation is not supported by dm driver`)
 	case gdb.InsertOptionSave:
 		// This syntax currently only supports design tables whose primary key is ID
 		listLength := len(list)
 		if listLength == 0 {
-			return nil, gerror.NewCode(gcode.CodeNotSupported, `Save operation list is empty by dm driver`)
+			return nil, gerror.NewCode(gcode.CodeInvalidRequest, `Save operation list is empty by dm driver`)
 		}
 		var (
 			keysSort     []string
@@ -232,7 +235,6 @@ func (d *DriverDM) DoInsert(
 		// updateValues: Handle values ​​that need to be updated
 		// queryValues: Handle only one insert with column name
 		insertKeys, insertValues, updateValues, queryValues := parseValue(list[0], char)
-
 		// unionValues: Handling values ​​that need to be inserted and updated
 		unionValues := parseUnion(list[1:], char)
 

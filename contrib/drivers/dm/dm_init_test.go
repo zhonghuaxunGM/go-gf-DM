@@ -157,6 +157,7 @@ func createInitTable(table ...string) (name string) {
 			"create_time":  gtime.Now().String(),
 		})
 	}
+	// TODO fix bugs
 	result, err := db.Insert(context.Background(), name, array.Slice())
 	gtest.Assert(err, nil)
 
