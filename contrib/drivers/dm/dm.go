@@ -183,9 +183,9 @@ func (d *DriverDM) DoFilter(ctx context.Context, link gdb.Link, sql string, args
 	str, _ = gregex.ReplaceString("\t", "", str)
 	// There should be no need to capitalize, because it has been done from field processing before
 	newSql = str
-	// g.Dump("DriverDM.DoFilter()::newSql", newSql)
+	g.Dump("DriverDM.DoFilter()::newSql", newSql)
 	newArgs = args
-	// g.Dump("DriverDM.DoFilter()::newArgs", newArgs)
+	g.Dump("DriverDM.DoFilter()::newArgs", newArgs)
 
 	return
 }
@@ -293,9 +293,6 @@ func parseValue(listOne gdb.Map, char struct {
 			saveValue = strconv.FormatInt(va.Int(), 10)
 		case reflect.Int64:
 			saveValue = strconv.FormatInt(va.Int(), 10)
-			// TODO
-			// deal with time.Time
-			// case reflect.Struct:
 		default:
 			g.Dump(fmt.Sprintf("column: %v, kind:%v", column, ty.Kind()))
 		}

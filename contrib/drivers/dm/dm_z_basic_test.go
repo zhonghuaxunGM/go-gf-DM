@@ -135,17 +135,14 @@ func Test_DB_Query(t *testing.T) {
 	})
 }
 
-// TODO
-// Model.Save {{struct}}无法处理 time.time 等strcut 类型
 func TestModelSave(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		// createTable("A_tables")
 		data := []User{
 			{
 				ID:          1,
-				AccountName: "1",
-				// deal with time.Time
-				// CreatedTime: time.Now(),
+				AccountName: "qqqqq",
+				CreatedTime: time.Now(),
 			},
 		}
 		_, err := db.Schema(TestDbName).Model("A_tables").Data(data).Save()
@@ -154,7 +151,7 @@ func TestModelSave(t *testing.T) {
 		data2 := []User{
 			{
 				ID:          2,
-				AccountName: "22",
+				AccountName: "2wwwwwww2",
 			},
 		}
 		_, err = db.Schema(TestDbName).Model("A_tables").Data(&data2).Save()
@@ -185,8 +182,6 @@ func TestModelSave(t *testing.T) {
 	})
 }
 
-// TODO
-// Model.Insert {{struct}}should use OmitEmpty() to avoid 非空约束，无视 sql default value
 func TestModelInsert(t *testing.T) {
 	// g.Model.insert not lost default not null coloumn
 	gtest.C(t, func(t *gtest.T) {
@@ -204,6 +199,8 @@ func TestModelInsert(t *testing.T) {
 		gtest.Assert(err, nil)
 	})
 
+	// TOOD
+	// wonder!
 	gtest.C(t, func(t *gtest.T) {
 		// createTable("A_tables")
 		i := 55
@@ -211,12 +208,12 @@ func TestModelInsert(t *testing.T) {
 			ID:          int64(i),
 			AccountName: fmt.Sprintf(`A%d55`, i),
 			PwdReset:    5,
-			// CreatedTime: time.Now(),
+			CreatedTime: time.Now(),
 			// UpdatedTime: time.Now(),
 		}
 		// _, err := db.Schema(TestDbName).Model("A_tables").Data(data).Insert()
 		_, err := db.Schema(TestDbName).Model("A_tables").Data(&data).Insert()
-		gtest.AssertNE(err, nil)
+		gtest.Assert(err, nil)
 	})
 }
 
@@ -244,8 +241,6 @@ func Test_DB_Exec(t *testing.T) {
 	})
 }
 
-// TODO
-// DB.Insert {{struct}} should use OmitEmpty() to avoid 非空约束，无视 sql default value
 func Test_DB_Insert(t *testing.T) {
 	// table := createTable()
 	// defer dropTable(table)
@@ -393,8 +388,6 @@ func Test_DB_BatchInsert(t *testing.T) {
 	})
 }
 
-// TODO
-// Model.Insert {{struct}} should use OmitEmpty() to avoid 非空约束，无视 sql default value
 func Test_DB_BatchInsert_Struct(t *testing.T) {
 	// batch insert struct
 	gtest.C(t, func(t *gtest.T) {
