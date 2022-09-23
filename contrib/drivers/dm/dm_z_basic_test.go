@@ -111,14 +111,14 @@ func Test_DB_Query(t *testing.T) {
 		tableName := "A_tables"
 		// createTable(tableName)
 
-		// resOne, err := db.Query(ctx, fmt.Sprintf("SELECT * from %s", tableName))
-		// t.AssertNil(err)
-		// g.Dump("resOne", resOne)
+		resOne, err := db.Query(ctx, fmt.Sprintf("SELECT * from %s", tableName))
+		t.AssertNil(err)
+		g.Dump("resOne", resOne)
 
-		// resTwo := make([]User, 0)
-		// err = db.Schema(TestDbName).Model(tableName).Scan(&resTwo)
-		// t.AssertNil(err)
-		// g.Dump("resTwo", resTwo)
+		resTwo := make([]User, 0)
+		err = db.Schema(TestDbName).Model(tableName).Scan(&resTwo)
+		t.AssertNil(err)
+		g.Dump("resTwo", resTwo)
 
 		resThree := make([]User, 0)
 		model := db.Model(tableName)
@@ -191,7 +191,7 @@ func TestModelInsert(t *testing.T) {
 			ID:          int64(i),
 			AccountName: fmt.Sprintf(`A%dfsdfz`, i),
 			PwdReset:    7,
-			CreatedTime: time.Now(),
+			// CreatedTime: time.Now(),
 			UpdatedTime: time.Now(),
 		}
 		// _, err := db.Schema(TestDbName).Model("A_tables").Data(data).Insert()
@@ -276,7 +276,7 @@ func Test_DB_Insert(t *testing.T) {
 		result, err = db.Schema(TestDbName).Insert(ctx, "A_tables", User{
 			ID:          4,
 			AccountName: "struct_4",
-			CreatedTime: timeStr,
+			// CreatedTime: timeStr,
 			UpdatedTime: timeStr,
 		})
 		t.AssertNil(err)
@@ -297,7 +297,7 @@ func Test_DB_Insert(t *testing.T) {
 			ID:          5,
 			AccountName: "struct_5",
 			CreatedTime: timeStr,
-			UpdatedTime: timeStr,
+			// UpdatedTime: timeStr,
 		})
 		t.AssertNil(err)
 		n, _ = result.RowsAffected()
@@ -399,7 +399,7 @@ func Test_DB_BatchInsert_Struct(t *testing.T) {
 			AccountName: "t1",
 			// CreatedTime: time.Now(),
 		}
-		result, err := db.Schema(TestDbName).Model(table).OmitEmpty().Insert(user)
+		result, err := db.Schema(TestDbName).Model(table).Insert(user)
 		t.AssertNil(err)
 		n, _ := result.RowsAffected()
 		t.Assert(n, 1)

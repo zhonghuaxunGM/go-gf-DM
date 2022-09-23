@@ -183,9 +183,9 @@ func (d *DriverDM) DoFilter(ctx context.Context, link gdb.Link, sql string, args
 	str, _ = gregex.ReplaceString("\t", "", str)
 	// There should be no need to capitalize, because it has been done from field processing before
 	newSql = str
-	g.Dump("DriverDM.DoFilter()::newSql", newSql)
+	// g.Dump("DriverDM.DoFilter()::newSql", newSql)
 	newArgs = args
-	g.Dump("DriverDM.DoFilter()::newArgs", newArgs)
+	// g.Dump("DriverDM.DoFilter()::newArgs", newArgs)
 
 	return
 }
