@@ -21,8 +21,8 @@ import (
 
 func Test_DB_Ping(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		err1 := db.PingMaster()
-		err2 := db.PingSlave()
+		err1 := dblink.PingMaster()
+		err2 := dblink.PingSlave()
 		t.Assert(err1, nil)
 		t.Assert(err2, nil)
 	})
@@ -153,23 +153,8 @@ func TestSave(t *testing.T) {
 		data := []User{
 			{
 				ID:          1,
-				AccountName: "dp11",
-				CreatedTime: time.Now(),
-			},
-			{
-				ID:          2,
-				AccountName: "dp22",
-				CreatedTime: time.Now(),
-			},
-			{
-				ID:          3,
-				AccountName: "dp33",
-				CreatedTime: time.Now(),
-			},
-			{
-				ID:          5,
-				AccountName: "dp55",
-				CreatedTime: time.Now(),
+				AccountName: "q2",
+				// CreatedTime: time.Now(),
 			},
 		}
 		_, err := db.Schema(TestDbName).Model("C_insert").Data(data).Save()
