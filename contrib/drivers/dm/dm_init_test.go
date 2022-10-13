@@ -30,17 +30,17 @@ var (
 const (
 	TableSize = 10
 
-// TableName       = "inf_group"
-// TableNamePrefix = "t_"
-// TestSchema = "SYSDBADP"
+	// TableName       = "inf_group"
+	// TableNamePrefix = "t_"
+	// TestSchema = "SYSDBADP"
 )
 
 const (
 	TestDbIP    = "127.0.0.1"
 	TestDbPort  = "5236"
-	TestDbUser  = "SYSDBADP"
-	TestDbPass  = "SYSDBADP"
-	TestDbName  = "SYSDBADP"
+	TestDbUser  = "SYSDBA"
+	TestDbPass  = "SYSDBA001"
+	TestDbName  = "SYSDBA"
 	TestDbType  = "dm"
 	TestCharset = "utf8"
 )
@@ -60,14 +60,13 @@ func init() {
 		MaxOpenConnCount: 10,
 		CreatedAt:        "created_time",
 		UpdatedAt:        "updated_time",
-		DeletedAt:        "updated_time",
 	}
 
 	nodeLink := gdb.ConfigNode{
 		Type: TestDbType,
 		Name: TestDbName,
 		Link: fmt.Sprintf(
-			"dm://%s:%s@%s:%s/%s?charset=%s",
+			"dm:%s:%s@tcp(%s:%s)/%s?charset=%s",
 			TestDbUser, TestDbPass, TestDbIP, TestDbPort, TestDbName, TestCharset,
 		),
 	}
@@ -160,8 +159,7 @@ func createInitTable(table ...string) (name string) {
 			"create_time":  gtime.Now().String(),
 		})
 	}
-	// TODO fix bugs
-	result, err := db.Insert(context.Background(), name, array.Slice())
+	result, err := db.Schema(TestDbName).Insert(context.Background(), name, array.Slice())
 	gtest.Assert(err, nil)
 
 	n, e := result.RowsAffected()
@@ -171,7 +169,10 @@ func createInitTable(table ...string) (name string) {
 }
 
 func dropTable(table string) {
-	count, err := db.GetCount(ctx, "SELECT COUNT(*) FROM USER_TABLES WHERE TABLE_NAME = ?", strings.ToUpper(table))
+	count, err := db.GetCount(
+		ctx,
+		"SELECT COUNT(*) FROM USER_TABLES WHERE TABLE_NAME = ?", strings.ToUpper(table),
+	)
 	if err != nil {
 		gtest.Fatal(err)
 	}
