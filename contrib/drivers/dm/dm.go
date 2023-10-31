@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
-	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -342,22 +340,23 @@ func parseUnion(list gdb.List, char struct {
 			if mapper[column] == nil {
 				continue
 			}
-			va := reflect.ValueOf(mapper[column])
-			ty := reflect.TypeOf(mapper[column])
-			switch ty.Kind() {
-			case reflect.String:
-				saveValue = append(saveValue, char.valueCharL+va.String()+char.valueCharR)
+			// va := reflect.ValueOf(mapper[column])
+			// ty := reflect.TypeOf(mapper[column])
+			// switch ty.Kind() {
+			// case reflect.String:
+			// 	saveValue = append(saveValue, char.valueCharL+va.String()+char.valueCharR)
 
-			case reflect.Int:
-				saveValue = append(saveValue, strconv.FormatInt(va.Int(), 10))
+			// case reflect.Int:
+			// 	saveValue = append(saveValue, strconv.FormatInt(va.Int(), 10))
 
-			case reflect.Int64:
-				saveValue = append(saveValue, strconv.FormatInt(va.Int(), 10))
+			// case reflect.Int64:
+			// 	saveValue = append(saveValue, strconv.FormatInt(va.Int(), 10))
 
-			default:
-				// The fish has no chance getting here.
-				// Nothing to do.
-			}
+			// default:
+			// 	// The fish has no chance getting here.
+			// 	// Nothing to do.
+			// }
+			saveValue = append(saveValue, gconv.String(mapper[column]))
 		}
 		unionValues = append(
 			unionValues,
