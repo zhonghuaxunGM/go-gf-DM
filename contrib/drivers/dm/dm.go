@@ -1,10 +1,3 @@
-// Copyright GoFrame Author(https://goframe.org). All Rights Reserved.
-//
-// This Source Code Form is subject to the terms of the MIT License.
-// If a copy of the MIT was not distributed with this file,
-// You can obtain one at https://github.com/gogf/gf.
-
-// Package dm implements gdb.Driver, which supports operations for database DM.
 package dm
 
 import (
@@ -15,20 +8,28 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "gitee.com/chunanyong/dm"
+
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gregex"
 	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/gutil"
 )
 
 type Driver struct {
 	*gdb.Core
 }
+
+const (
+	quoteChar = `"`
+)
 
 func init() {
 	var (
@@ -43,16 +44,19 @@ func init() {
 	}
 }
 
+// New create and returns a driver that implements gdb.Driver, which supports operations for dm.
 func New() gdb.Driver {
 	return &Driver{}
 }
 
+// New creates and returns a database object for dm.
 func (d *Driver) New(core *gdb.Core, node *gdb.ConfigNode) (gdb.DB, error) {
 	return &Driver{
 		Core: core,
 	}, nil
 }
 
+// Open creates and returns an underlying sql.DB object for pgsql.
 func (d *Driver) Open(config *gdb.ConfigNode) (db *sql.DB, err error) {
 	var (
 		source               string
@@ -66,13 +70,16 @@ func (d *Driver) Open(config *gdb.ConfigNode) (db *sql.DB, err error) {
 	// Data Source Name of DM8:
 	// dm://userName:password@ip:port/dbname
 	source = fmt.Sprintf(
-		"dm://%s:%s@%s:%s/%s?charset=%s",
-		config.User, config.Pass, config.Host, config.Port, config.Name, config.Charset,
+		"dm://%s:%s@%s:%s/%s?charset=%s&schema=%s",
+		config.User, config.Pass, config.Host, config.Port, config.Name, config.Charset, config.Name,
 	)
 	// Demo of timezone setting:
 	// &loc=Asia/Shanghai
 	if config.Timezone != "" {
-		source = fmt.Sprintf("%s&loc%s", source, url.QueryEscape(config.Timezone))
+		if strings.Contains(config.Timezone, "/") {
+			config.Timezone = url.QueryEscape(config.Timezone)
+		}
+		source = fmt.Sprintf("%s&loc%s", source, config.Timezone)
 	}
 	if config.Extra != "" {
 		source = fmt.Sprintf("%s&%s", source, config.Extra)
@@ -88,10 +95,13 @@ func (d *Driver) Open(config *gdb.ConfigNode) (db *sql.DB, err error) {
 	return
 }
 
+// GetChars returns the security char for this type of database.
 func (d *Driver) GetChars() (charLeft string, charRight string) {
-	return `"`, `"`
+	return quoteChar, quoteChar
 }
 
+// Tables retrieves and returns the tables of current schema.
+// It's mainly used in cli tool chain for automatically generating the models.
 func (d *Driver) Tables(ctx context.Context, schema ...string) (tables []string, err error) {
 	var result gdb.Result
 	// When schema is empty, return the default link
@@ -114,9 +124,8 @@ func (d *Driver) Tables(ctx context.Context, schema ...string) (tables []string,
 	return
 }
 
-func (d *Driver) TableFields(
-	ctx context.Context, table string, schema ...string,
-) (fields map[string]*gdb.TableField, err error) {
+// TableFields retrieves and returns the fields' information of specified table of current schema.
+func (d *Driver) TableFields(ctx context.Context, table string, schema ...string) (fields map[string]*gdb.TableField, err error) {
 	var (
 		result gdb.Result
 		link   gdb.Link
@@ -131,8 +140,9 @@ func (d *Driver) TableFields(
 	result, err = d.DoSelect(
 		ctx, link,
 		fmt.Sprintf(
-			`SELECT * FROM ALL_TAB_COLUMNS WHERE Table_Name= '%s'`,
+			`SELECT * FROM ALL_TAB_COLUMNS WHERE Table_Name= '%s' AND OWNER = '%s'`,
 			strings.ToUpper(table),
+			strings.ToUpper(d.GetSchema()),
 		),
 	)
 	if err != nil {
@@ -161,20 +171,44 @@ func (d *Driver) TableFields(
 	return fields, nil
 }
 
-// DoFilter deals with the sql string before commits it to underlying sql driver.
-func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args []interface{}) (newSql string, newArgs []interface{}, err error) {
-	defer func() {
-		newSql, newArgs, err = d.Core.DoFilter(ctx, link, newSql, newArgs)
-	}()
-	// There should be no need to capitalize, because it has been done from field processing before
-	newSql, err = gregex.ReplaceString(`["\n\t]`, "", sql)
-	newSql = gstr.ReplaceI(newSql, "GROUP_CONCAT", "WM_CONCAT")
-	// g.Dump("Driver.DoFilter()::newSql", newSql)
-	newArgs = args
-	// g.Dump("Driver.DoFilter()::newArgs", newArgs)
-	return
+// ConvertValueForField converts value to the type of the record field.
+func (d *Driver) ConvertValueForField(ctx context.Context, fieldType string, fieldValue interface{}) (interface{}, error) {
+	switch itemValue := fieldValue.(type) {
+	// dm does not support time.Time, it so here converts it to time string that it supports.
+	case time.Time:
+		// If the time is zero, it then updates it to nil,
+		// which will insert/update the value to database as "null".
+		if itemValue.IsZero() {
+			return nil, nil
+		}
+		return gtime.New(itemValue).String(), nil
+
+	// dm does not support time.Time, it so here converts it to time string that it supports.
+	case *time.Time:
+		// If the time is zero, it then updates it to nil,
+		// which will insert/update the value to database as "null".
+		if itemValue == nil || itemValue.IsZero() {
+			return nil, nil
+		}
+		return gtime.New(itemValue).String(), nil
+	}
+
+	return fieldValue, nil
 }
 
+// DoFilter deals with the sql string before commits it to underlying sql driver.
+func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args []interface{}) (newSql string, newArgs []interface{}, err error) {
+	// There should be no need to capitalize, because it has been done from field processing before
+	newSql, _ = gregex.ReplaceString(`["\n\t]`, "", sql)
+	return d.Core.DoFilter(
+		ctx,
+		link,
+		gstr.ReplaceI(gstr.ReplaceI(newSql, "GROUP_CONCAT", "LISTAGG"), "SEPARATOR", ","),
+		args,
+	)
+}
+
+// DoInsert inserts or updates data forF given table.
 func (d *Driver) DoInsert(
 	ctx context.Context, link gdb.Link, table string, list gdb.List, option gdb.DoInsertOption,
 ) (result sql.Result, err error) {
@@ -262,6 +296,8 @@ func parseValue(listOne gdb.Map, char struct {
 	duplicateKey string
 	keys         []string
 }) (insertKeys []string, insertValues []string, updateValues []string, queryValues []string) {
+	g.Dump("parseValue list:", listOne)
+	g.Dump("parseValue char:", char)
 	for _, column := range char.keys {
 		if listOne[column] == nil {
 			// remove unassigned struct object
@@ -276,23 +312,7 @@ func parseValue(listOne gdb.Map, char struct {
 			)
 		}
 
-		va := reflect.ValueOf(listOne[column])
-		ty := reflect.TypeOf(listOne[column])
-		saveValue := ""
-		switch ty.Kind() {
-		case reflect.String:
-			saveValue = va.String()
-
-		case reflect.Int:
-			saveValue = strconv.FormatInt(va.Int(), 10)
-
-		case reflect.Int64:
-			saveValue = strconv.FormatInt(va.Int(), 10)
-
-		default:
-			// The fish has no chance getting here.
-			// Nothing to do.
-		}
+		saveValue := gconv.String(listOne[column])
 		queryValues = append(
 			queryValues,
 			fmt.Sprintf(
@@ -312,7 +332,11 @@ func parseUnion(list gdb.List, char struct {
 	duplicateKey string
 	keys         []string
 }) (unionValues []string) {
+	g.Dump("parseUnion list:", list)
+	g.Dump("parseUnion char:", char)
 	for _, mapper := range list {
+		g.Dump("parseUnion mapper:", mapper)
+
 		var saveValue []string
 		for _, column := range char.keys {
 			if mapper[column] == nil {
