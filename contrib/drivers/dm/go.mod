@@ -1,4 +1,4 @@
-module github.com/zhonghuaxunGM/go-gf-DM
+module github.com/zhonghuaxunGM/go-gf-DM/contrib/drivers/dm
 
 go 1.15
 
