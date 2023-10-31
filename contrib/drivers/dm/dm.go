@@ -356,7 +356,11 @@ func parseUnion(list gdb.List, char struct {
 			// 	// The fish has no chance getting here.
 			// 	// Nothing to do.
 			// }
-			saveValue = append(saveValue, gconv.String(mapper[column]))
+			saveValue = append(saveValue,
+				fmt.Sprintf(
+					char.valueCharL+"%s"+char.valueCharR,
+					gconv.String(mapper[column]),
+				))
 		}
 		unionValues = append(
 			unionValues,
