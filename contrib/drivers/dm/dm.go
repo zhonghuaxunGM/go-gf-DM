@@ -203,30 +203,35 @@ func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args [
 	// g.Dump("err:", err)
 	// g.Dump("array:", array)
 	// g.Dump("array:", array[0][1])
+	newSql = gstr.ReplaceI(gstr.ReplaceI(newSql, "GROUP_CONCAT", "LISTAGG"), "SEPARATOR", ",")
+	l, r := d.GetChars()
+	newSql = gstr.ReplaceI(newSql, "INDEX", l+"INDEX"+r)
+	g.Dump("new:", newSql)
+
 	return d.Core.DoFilter(
 		ctx,
 		link,
-		gstr.ReplaceI(gstr.ReplaceI(newSql, "GROUP_CONCAT", "LISTAGG"), "SEPARATOR", ","),
+		newSql,
 		args,
 	)
 }
 
-func (d *Driver) DoQuery(ctx context.Context, link gdb.Link, sql string, args ...interface{}) (gdb.Result, error) {
-	g.Dump("newSql111：", sql)
-	array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, sql)
-	g.Dump("err:", err)
-	g.Dump("array:", array)
-	g.Dump("array[0][1]:", array[0][1])
-	l, r := d.GetChars()
-	new := gstr.ReplaceI(sql, "INDEX", l+"INDEX"+r)
-	g.Dump("new:", new)
-	return d.Core.DoQuery(
-		ctx,
-		link,
-		new,
-		args,
-	)
-}
+// func (d *Driver) DoQuery(ctx context.Context, link gdb.Link, sql string, args ...interface{}) (gdb.Result, error) {
+// 	g.Dump("newSql111：", sql)
+// 	array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, sql)
+// 	g.Dump("err:", err)
+// 	g.Dump("array:", array)
+// 	g.Dump("array[0][1]:", array[0][1])
+// 	l, r := d.GetChars()
+// 	new := gstr.ReplaceI(sql, "INDEX", l+"INDEX"+r)
+// 	g.Dump("new:", new)
+// 	return d.Core.DoQuery(
+// 		ctx,
+// 		link,
+// 		new,
+// 		args,
+// 	)
+// }
 
 // DoInsert inserts or updates data forF given table.
 func (d *Driver) DoInsert(
