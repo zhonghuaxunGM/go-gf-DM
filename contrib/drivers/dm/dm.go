@@ -216,7 +216,11 @@ func (d *Driver) DoQuery(ctx context.Context, link gdb.Link, sql string, args ..
 	array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, sql)
 	g.Dump("err:", err)
 	g.Dump("array:", array)
-	g.Dump("array:", array[0][1])
+	g.Dump("array[0][1]:", array[0][1])
+	l, r := d.GetChars()
+	new, err := gregex.ReplaceString(`SELECT (.*) FROM .*`, `index`, l+`index`+r)
+	g.Dump("err2222:", err)
+	g.Dump("new:", new)
 	return d.Core.DoQuery(
 		ctx,
 		link,
