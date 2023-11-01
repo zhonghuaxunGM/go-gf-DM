@@ -199,7 +199,7 @@ func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args [
 	// There should be no need to capitalize, because it has been done from field processing before
 	newSql, _ = gregex.ReplaceString(`["\n\t]`, "", sql)
 	g.Dump("newSql111：", newSql)
-	array, err := gregex.MatchAllString(`select (.*) from .*`, newSql)
+	array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, newSql)
 	g.Dump("err:", err)
 	g.Dump("array:", array)
 	return d.Core.DoFilter(
