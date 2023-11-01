@@ -198,14 +198,29 @@ func (d *Driver) ConvertValueForField(ctx context.Context, fieldType string, fie
 func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args []interface{}) (newSql string, newArgs []interface{}, err error) {
 	// There should be no need to capitalize, because it has been done from field processing before
 	newSql, _ = gregex.ReplaceString(`["\n\t]`, "", sql)
-	g.Dump("newSql111：", newSql)
-	array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, newSql)
-	g.Dump("err:", err)
-	g.Dump("array:", array)
+	// g.Dump("newSql111：", newSql)
+	// array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, newSql)
+	// g.Dump("err:", err)
+	// g.Dump("array:", array)
+	// g.Dump("array:", array[0][1])
 	return d.Core.DoFilter(
 		ctx,
 		link,
 		gstr.ReplaceI(gstr.ReplaceI(newSql, "GROUP_CONCAT", "LISTAGG"), "SEPARATOR", ","),
+		args,
+	)
+}
+
+func (d *Driver) DoQuery(ctx context.Context, link gdb.Link, sql string, args ...interface{}) (gdb.Result, error) {
+	g.Dump("newSql111：", sql)
+	array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, sql)
+	g.Dump("err:", err)
+	g.Dump("array:", array)
+	g.Dump("array:", array[0][1])
+	return d.Core.DoQuery(
+		ctx,
+		link,
+		sql,
 		args,
 	)
 }
