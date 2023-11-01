@@ -204,6 +204,7 @@ func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args [
 	// g.Dump("array:", array)
 	// g.Dump("array:", array[0][1])
 	newSql = gstr.ReplaceI(gstr.ReplaceI(newSql, "GROUP_CONCAT", "LISTAGG"), "SEPARATOR", ",")
+	// TODO 太粗糙了，应该 从 select from 之间去 处理 GROUP_CONCAT 以及 index 的问题
 	l, r := d.GetChars()
 	newSql = gstr.ReplaceI(newSql, "INDEX", l+"INDEX"+r)
 	g.Dump("new:", newSql)
