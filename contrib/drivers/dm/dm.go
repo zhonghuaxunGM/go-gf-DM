@@ -199,15 +199,19 @@ func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args [
 	// There should be no need to capitalize, because it has been done from field processing before
 	newSql, _ = gregex.ReplaceString(`["\n\t]`, "", sql)
 	// g.Dump("newSql111：", newSql)
-	// array, err := gregex.MatchAllString(`SELECT (.*) FROM .*`, newSql)
+	// array, err := gregex.MatchAllString(`SELECT (.*INDEX.*) FROM .*`, newSql)
 	// g.Dump("err:", err)
 	// g.Dump("array:", array)
 	// g.Dump("array:", array[0][1])
 	newSql = gstr.ReplaceI(gstr.ReplaceI(newSql, "GROUP_CONCAT", "LISTAGG"), "SEPARATOR", ",")
 	// TODO 太粗糙了，应该 从 select from 之间去 处理 GROUP_CONCAT 以及 index 的问题
+	// TODO user 这个关键字 也是 需要 安全字符 转义的
 	l, r := d.GetChars()
-	newSql = gstr.ReplaceI(newSql, "INDEX", l+"INDEX"+r)
+	// newSql = gstr.ReplaceI(newSql, "INDEX", l+"INDEX"+r)
 	g.Dump("new:", newSql)
+	newSql, err = gregex.ReplaceString(`SELECT (.*INDEX.*) FROM .*`, l+"INDEX"+r, newSql)
+	g.Dump("err:", err)
+	g.Dump("newSql:", newSql)
 
 	return d.Core.DoFilter(
 		ctx,
